@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+  scrape_timeout: 30s
+
+scrape_configs:
+  - job_name: nats_cluster
+    static_configs:
+      - targets:
+          - nats_exporter1:7777
+          - nats_exporter2:7777
+          - nats_exporter3:7777
+          - nats_exporter_leaf:7777

@@ -1,0 +1,113 @@
+version: "3"
+services:
+  nats1:
+    image: "nats:2.9.17-alpine"
+    container_name: nats1
+    ports:
+      - "4222:4222"
+      - "7422:7422"
+      - "8222:8222"
+      - "8443:8443"
+    volumes:
+      - ./data/nats1:/data
+      - ./nats/nats1.cfg:/etc/nats/nats.cfg:ro
+    restart: unless-stopped
+    command:
+      - "nats-server"
+      - "-c"
+      - "/etc/nats/nats.cfg"
+
+  nats2:
+    image: "nats:2.9.17-alpine"
+    container_name: nats2
+    ports:
+      - "4223:4223"
+      - "8223:8223"
+    volumes:
+      - ./data/nats2:/data
+      - ./nats/nats2.cfg:/etc/nats/nats.cfg:ro
+    restart: unless-stopped
+    command:
+      - "nats-server"
+      - "-c"
+      - "/etc/nats/nats.cfg"
+
+  nats3:
+    image: "nats:2.9.17-alpine"
+    container_name: nats3
+    ports:
+      - "4224:4224"
+      - "8224:8224"
+    volumes:
+      - ./data/nats3:/data
+      - ./nats/nats3.cfg:/etc/nats/nats.cfg:ro
+    restart: unless-stopped
+    command:
+      - "nats-server"
+      - "-c"
+      - "/etc/nats/nats.cfg"
+
+  nats_exporter1:
+    image: "natsio/prometheus-nats-exporter:0.11.0"
+    container_name: nats_exporter1
+    ports:
+      - "7777:7777"
+    restart: unless-stopped
+    command:
+      - "-varz"
+      - "-jsz"
+      - "all"
+      - "http://nats1:8222"
+
+  nats_exporter2:
+    image: "natsio/prometheus-nats-exporter:0.11.0"
+    container_name: nats_exporter2
+    restart: unless-stopped
+    command:
+      - "-varz"
+      - "-jsz"
+      - "all"
+      - "http://nats2:8223"
+
+  nats_exporter3:
+    image: "natsio/prometheus-nats-exporter:0.11.0"
+    container_name: nats_exporter3
+    restart: unless-stopped
+    command:
+      - "-varz"
+      - "-jsz"
+      - "all"
+      - "http://nats3:8224"
+
+  victoria_metrics:
+    image: "victoriametrics/victoria-metrics:v1.90.0"
+    container_name: victoria_metrics
+    restart: unless-stopped
+    ports:
+      - "8428:8428"
+    volumes:
+      - ./data/metrics:/victoria-metrics-data
+
+  vmagent:
+    image: "victoriametrics/vmagent:v1.90.0"
+    container_name: vmagent
+    restart: unless-stopped
+    ports:
+      - "8429:8429"
+    volumes:
+      - ./monitoring/vmagent/prometheus.yml:/etc/prometheus.yml:ro
+    command:
+      - "-promscrape.config=/etc/prometheus.yml"
+      - "-remoteWrite.url=http://victoria_metrics:8428/api/v1/write"
+
+  grafana:
+    image: "grafana/grafana:9.5.2"
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      - victoria_metrics
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
