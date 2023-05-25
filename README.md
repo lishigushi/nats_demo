@@ -11,6 +11,7 @@ docker compose down
 ## for leaf setup
 
 run all the containers, the use the script for leaf stream setup
+
 for the last question just press the Enter key
 ```
 ./setup_leaf.sh
